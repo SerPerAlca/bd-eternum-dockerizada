@@ -1,0 +1,61 @@
+Los 3 comandos clave
+Desde la carpeta donde tienes el archivo docker-compose.yml, ejecuta:
+
+Detener y eliminar contenedores y redes:
+
+Bash
+
+>> docker-compose down
+Eliminar los volúmenes (Crucial para que se aplique el init.sql): Si no borras el volumen, Docker verá que la base de datos ya existe y no ejecutará tus scripts nuevos.
+
+Bash
+
+>> docker-compose down -v
+(La bandera -v borra los volúmenes asociados).
+
+Levantar todo de nuevo:
+
+Bash
+
+>> docker-compose up -d
+
+
+
+
+
+1. abrir Docker desktop.
+2. Levantar las bases de datos : docker compose up -d
+3. asegurarte de que está corriendo: docker ps
+4. Conectarte a MySQL: docker exec -it mysql_core_book mysql -u root -p
+	contraseña: root
+5. SHOW DATABASES;
+
+
+Cosas IMPORTANTES que debes saber:
+
+Los scripts solo se ejecutan la PRIMERA vez
+
+Si cambias SQL:
+
+docker compose down -v
+docker compose up -d
+
+Esto borra los datos.
+
+
+
+
+Conectar desde una app (React, Java, etc.):
+host: localhost
+port: 3306
+user: root
+password: root
+database: core (o book)
+
+
+
+docker compose up -d     # levantar
+docker ps               # ver contenedor
+docker exec -it mysql_core_book mysql -u root -p
+docker compose down     # apagar
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}" # saber el nombre de tus contenedores
