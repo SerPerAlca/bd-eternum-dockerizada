@@ -41,16 +41,10 @@ CREATE TABLE ARMORS_TYPE (
   DESCRIPTION VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE ITEMS_TYPE (
-  CODE VARCHAR(4) PRIMARY KEY,
-  DESCRIPTION VARCHAR(255) NOT NULL
-);
-
 CREATE TABLE RARITY_LEVELS (
   CODE VARCHAR(4) PRIMARY KEY,
   DESCRIPTION VARCHAR(255) NOT NULL,
-  COLOR_HEX VARCHAR(7) NOT NULL,
-  DROP_RATE DECIMAL(5,4) NOT NULL
+  COLOR_HEX VARCHAR(7) NOT NULL
 );
 
 CREATE TABLE PRODUCTS_TYPE (
@@ -150,73 +144,122 @@ CREATE TABLE HERO_SKILL_ARMORS (
 -- ENEMIES
 -- =====================
 CREATE TABLE ENEMIES (
-  ID BIGINT AUTO_INCREMENT PRIMARY KEY,
-  SPECIES_TYPE VARCHAR(4) NOT NULL,
-  BASE_STATS_ID BIGINT NOT NULL,
-  DESCRIPTION TEXT NOT NULL,
-  IS_BOSS TINYINT(1) NOT NULL,
-  REWARD VARCHAR(255),
-  PORTRAIT_IMAGE_URL VARCHAR(255) NOT NULL,
-  CONSTRAINT fk_enemy_species FOREIGN KEY (SPECIES_TYPE) REFERENCES SPECIES_TYPE(CODE),
-  CONSTRAINT fk_enemy_stats FOREIGN KEY (BASE_STATS_ID) REFERENCES BASE_STATS(ID)
-) ENGINE=InnoDB;
+  ID bigint NOT NULL AUTO_INCREMENT,
+  SPECIES_TYPE varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  NAME varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  BASE_STATS_ID bigint NOT NULL,
+  DESCRIPTION text COLLATE utf8mb4_unicode_ci NOT NULL,
+  IS_BOSS tinyint(1) NOT NULL,
+  REWARD varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  EXP_POINTS int NOT NULL DEFAULT '0',
+  EVENT_TRIGGER varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PORTRAIT_IMAGE_URL varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (ID),
+  KEY fk_enemy_species (SPECIES_TYPE),
+  KEY fk_enemy_stats (BASE_STATS_ID),
+  CONSTRAINT fk_enemy_species FOREIGN KEY (SPECIES_TYPE) REFERENCES SPECIES_TYPE (CODE),
+  CONSTRAINT fk_enemy_stats FOREIGN KEY (BASE_STATS_ID) REFERENCES BASE_STATS (ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE SKILLS_ENEMIES (
   SKILL_ID BIGINT NOT NULL,
   ENEMY_ID BIGINT NOT NULL,
-  USE_LIMIT INT NOT NULL,
+  USE_LIMIT INT NOT NULL, -- Cuántas veces puede usar la skill en combate
   PRIMARY KEY (SKILL_ID, ENEMY_ID),
   FOREIGN KEY (SKILL_ID) REFERENCES SKILLS(ID),
   FOREIGN KEY (ENEMY_ID) REFERENCES ENEMIES(ID)
 );
 
 -- =====================
+-- COMBATE
+-- =====================
+
+CREATE TABLE COMBAT_TEMPLATES (
+  ID BIGINT AUTO_INCREMENT PRIMARY KEY,
+  SCENE_ID BIGINT NOT NULL,
+  DIFFICULTY_LEVEL INT NOT NULL,
+  INDEX idx_combat_scene (SCENE_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE COMBAT_TEMPLATES_ENEMIES (
+  COMBAT_TEMPLATE_ID BIGINT NOT NULL,
+  ENEMY_ID BIGINT NOT NULL,
+  QUANTITY INT DEFAULT 1, 
+  PRIMARY KEY (COMBAT_TEMPLATE_ID, ENEMY_ID),
+  CONSTRAINT fk_cte_template FOREIGN KEY (COMBAT_TEMPLATE_ID) REFERENCES COMBAT_TEMPLATES(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_cte_enemy FOREIGN KEY (ENEMY_ID) REFERENCES ENEMIES(ID)
+) ENGINE=InnoDB;
+
+-- =====================
+-- SISTEMA DE BOTÍN (LOOT)
+-- =====================
+
+CREATE TABLE ENEMIES_LOOT (
+    ID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ENEMY_ID BIGINT NOT NULL,
+    PRODUCT_ID BIGINT NOT NULL,
+    DROP_CHANCE DECIMAL(5,2) DEFAULT 100.00, -- Probabilidad (0.00 a 100.00)
+    QUANTITY INT DEFAULT 1,                  -- Cantidad del objeto
+    
+    CONSTRAINT fk_loot_enemy FOREIGN KEY (ENEMY_ID) REFERENCES ENEMIES(ID) ON DELETE CASCADE,
+    CONSTRAINT fk_loot_product FOREIGN KEY (PRODUCT_ID) REFERENCES PRODUCTS(ID)
+) ENGINE=InnoDB;
+
+-- =====================
 -- EQUIPAMIENTO
 -- =====================
 CREATE TABLE ARMORS (
-  ID BIGINT PRIMARY KEY,
-  RARITY VARCHAR(4) NOT NULL,
-  ARMOR_TYPE VARCHAR(4) NOT NULL,
-  NAME VARCHAR(255) NOT NULL,
-  DESCRIPTION TEXT NOT NULL,
-  PHYSICAL_DEFENSE INT,
-  MAGIC_DEFENSE INT,
-  UNLOCK_LEVEL INT NOT NULL,
-  WEIGHT INT NOT NULL,
-  SPECIAL_CONDITION VARCHAR(255),
-  FOREIGN KEY (RARITY) REFERENCES RARITY_LEVELS(CODE),
-  FOREIGN KEY (ARMOR_TYPE) REFERENCES ARMORS_TYPE(CODE),
-  CONSTRAINT fk_armor_product FOREIGN KEY (ID) REFERENCES PRODUCTS(ID)
-);
+  ID bigint NOT NULL,
+  RARITY varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  ARMOR_TYPE varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  NAME varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  DESCRIPTION text COLLATE utf8mb4_unicode_ci NOT NULL,
+  IMAGE_PATH varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PHYSICAL_DEFENSE int DEFAULT NULL,
+  MAGIC_DEFENSE int DEFAULT NULL,
+  UNLOCK_LEVEL int NOT NULL,
+  WEIGHT int NOT NULL,
+  SPECIAL_CONDITION varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (ID),
+  KEY RARITY (RARITY),
+  KEY ARMOR_TYPE (ARMOR_TYPE),
+  CONSTRAINT ARMORS_ibfk_1 FOREIGN KEY (RARITY) REFERENCES RARITY_LEVELS (CODE),
+  CONSTRAINT ARMORS_ibfk_2 FOREIGN KEY (ARMOR_TYPE) REFERENCES ARMORS_TYPE (CODE),
+  CONSTRAINT fk_armor_product FOREIGN KEY (ID) REFERENCES PRODUCTS (ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE WEAPONS (
-  ID BIGINT PRIMARY KEY,
-  RARITY VARCHAR(4) NOT NULL,
-  WEAPON_TYPE VARCHAR(4) NOT NULL,
-  NAME VARCHAR(255) NOT NULL,
-  DESCRIPTION TEXT NOT NULL,
-  PHYSICAL_ATTACK INT,
-  MAGIC_ATTACK INT,
-  UNLOCK_LEVEL INT NOT NULL,
-  WEIGHT INT NOT NULL,
-  SPECIAL_CONDITION VARCHAR(255),
-  FOREIGN KEY (RARITY) REFERENCES RARITY_LEVELS(CODE),
-  FOREIGN KEY (WEAPON_TYPE) REFERENCES WEAPONS_TYPE(CODE),
-  CONSTRAINT fk_weapon_product FOREIGN KEY (ID) REFERENCES PRODUCTS(ID)
-);
+  ID bigint NOT NULL,
+  RARITY varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  WEAPON_TYPE varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  NAME varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  DESCRIPTION text COLLATE utf8mb4_unicode_ci NOT NULL,
+  IMAGE_PATH varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PHYSICAL_ATTACK int DEFAULT NULL,
+  MAGIC_ATTACK int DEFAULT NULL,
+  UNLOCK_LEVEL int NOT NULL,
+  WEIGHT int NOT NULL,
+  SPECIAL_CONDITION varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (ID),
+  KEY RARITY (RARITY),
+  KEY WEAPON_TYPE (WEAPON_TYPE),
+  CONSTRAINT fk_weapon_product FOREIGN KEY (ID) REFERENCES PRODUCTS (ID),
+  CONSTRAINT WEAPONS_ibfk_1 FOREIGN KEY (RARITY) REFERENCES RARITY_LEVELS (CODE),
+  CONSTRAINT WEAPONS_ibfk_2 FOREIGN KEY (WEAPON_TYPE) REFERENCES WEAPONS_TYPE (CODE)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================
 -- ITEMS
 -- =====================
 CREATE TABLE ITEMS (
-  ID BIGINT PRIMARY KEY,
-  ITEM_TYPE VARCHAR(4) NOT NULL,
-  NAME VARCHAR(255) NOT NULL,
-  DESCRIPTION TEXT NOT NULL,
-  WEIGHT INT NOT NULL,
-  FOREIGN KEY (ITEM_TYPE) REFERENCES ITEMS_TYPE(CODE),
-  CONSTRAINT fk_item_product FOREIGN KEY (ID) REFERENCES PRODUCTS(ID)
-);
+  ID bigint NOT NULL,
+  NAME varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  DESCRIPTION text COLLATE utf8mb4_unicode_ci NOT NULL,
+  IMAGE_PATH varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  WEIGHT int NOT NULL,
+  PRIMARY KEY (ID),
+  CONSTRAINT fk_item_product FOREIGN KEY (ID) REFERENCES PRODUCTS (ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==========================================================
 -- WORLD / MAP / NAVIGATION
@@ -302,6 +345,7 @@ CREATE TABLE STORES_INVENTORIES (
 );
 
 
+
 -- ==========================================================
 -- INSERCIÓN DE DATOS (Ordenado por dependencias)
 -- ==========================================================
@@ -381,43 +425,52 @@ VALUES(7, 3, 0, 2, 0, 4, 2, 1, 3);
 INSERT INTO core.BASE_STATS
 (ID, PHYSICAL_ATTACK, MAGIC_ATTACK, EVASION, MANA, VITALITY, PHYSICAL_DEFENSE, MAGIC_DEFENSE, MOVEMENT)
 VALUES(8, 2, 0, 2, 1, 4, 3, 1, 2);
+INSERT INTO core.BASE_STATS
+(ID, PHYSICAL_ATTACK, MAGIC_ATTACK, EVASION, MANA, VITALITY, PHYSICAL_DEFENSE, MAGIC_DEFENSE, MOVEMENT)
+VALUES(9, 1, 0, 2, 0, 4, 1, 0, 3);
+INSERT INTO core.BASE_STATS
+(ID, PHYSICAL_ATTACK, MAGIC_ATTACK, EVASION, MANA, VITALITY, PHYSICAL_DEFENSE, MAGIC_DEFENSE, MOVEMENT)
+VALUES(10, 2, 0, 2, 0, 3, 1, 0, 2);
+INSERT INTO core.BASE_STATS
+(ID, PHYSICAL_ATTACK, MAGIC_ATTACK, EVASION, MANA, VITALITY, PHYSICAL_DEFENSE, MAGIC_DEFENSE, MOVEMENT)
+VALUES(11, 4, 0, 3, 4, 8, 2, 1, 3);
 
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('DGR', 'DAGGER');
+VALUES('2HS', 'ESPADA A DOS MANOS');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('AXE', 'AXE');
+VALUES('2MC', 'MAZA A DOS MANOS');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('MCE', 'MACE');
-INSERT INTO core.WEAPONS_TYPE
-(CODE, DESCRIPTION)
-VALUES('SPR', 'SPEAR');
+VALUES('AXE', 'HACHA');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
 VALUES('BOW', 'ARCO');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('STF', 'STAFF');
+VALUES('DGR', 'DAGA');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('SHD', 'SHIELD');
+VALUES('HGN', 'PISTOLA DE MANO');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('HGN', 'HANDGUN');
+VALUES('LGN', 'PISTOLA LARGA A DOS MANOS');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('LGN', 'LONGGUN');
+VALUES('MCE', 'MAZA');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('2HS', 'TWO-HANDED SWORD');
+VALUES('SHD', 'ESCUDO');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('2MC', 'TWO-HANDED MACE');
+VALUES('SPR', 'LANZA');
 INSERT INTO core.WEAPONS_TYPE
 (CODE, DESCRIPTION)
-VALUES('SWD', 'SWORD');
+VALUES('STF', 'BASTÓN');
+INSERT INTO core.WEAPONS_TYPE
+(CODE, DESCRIPTION)
+VALUES('SWD', 'ESPADA');
 
 INSERT INTO core.HERO_SKILL_WEAPONS
 (WEAPON_TYPE_CODE, HEROE_CODE)
@@ -477,6 +530,175 @@ INSERT INTO core.HERO_SKILL_WEAPONS
 (WEAPON_TYPE_CODE, HEROE_CODE)
 VALUES('SWD', 'VUKA');
 
+INSERT INTO core.COMBAT_TEMPLATES
+(ID, SCENE_ID, DIFFICULTY_LEVEL)
+VALUES(1, 47, 1);
+INSERT INTO core.COMBAT_TEMPLATES
+(ID, SCENE_ID, DIFFICULTY_LEVEL)
+VALUES(2, 59, 1);
 
+INSERT INTO core.ENEMIES
+(ID, SPECIES_TYPE, NAME, BASE_STATS_ID, DESCRIPTION, IS_BOSS, REWARD, EXP_POINTS, EVENT_TRIGGER, PORTRAIT_IMAGE_URL)
+VALUES(1, 'HUMA', 'Piquero de la Roca Negra', 9, 'Guardia que presta servicio en la Roca Negra. La mayoría de estos soldados son veteranos de las guerras del norte', 0, NULL, 5, NULL, '/static/image/enemies/Piquero_Roca_Negra.avif');
+INSERT INTO core.ENEMIES
+(ID, SPECIES_TYPE, NAME, BASE_STATS_ID, DESCRIPTION, IS_BOSS, REWARD, EXP_POINTS, EVENT_TRIGGER, PORTRAIT_IMAGE_URL)
+VALUES(3, 'HUMA', 'Juez de la Roca Negra', 11, 'Veterano de las guerras del Norte. Gano la medalla de la Fe al castigar a todos los habitantes de Puerto Triste por un delito de traición al reino', 1, 'PISTOLA DEL JUEZ: 1', 0, NULL, '/static/image/enemies/Juez_Roca_Negra.avif');
+INSERT INTO core.ENEMIES
+(ID, SPECIES_TYPE, NAME, BASE_STATS_ID, DESCRIPTION, IS_BOSS, REWARD, EXP_POINTS, EVENT_TRIGGER, PORTRAIT_IMAGE_URL)
+VALUES(2, 'HUMA', 'Arcabucero de la Roca Negra', 10, 'Guardia que presta servicio en la Roca Negra. La mayoría de estos soldados son veteranos de las guerras del norte', 0, NULL, 5, NULL, '/static/image/enemies/Arcabucero_Roca_Negra.avif');
+
+INSERT INTO core.PRODUCTS_TYPE
+(CODE, DESCRIPTION)
+VALUES('ITEM', 'Item de un sólo uso');
+INSERT INTO core.PRODUCTS_TYPE
+(CODE, DESCRIPTION)
+VALUES('ARMA', 'Arma');
+INSERT INTO core.PRODUCTS_TYPE
+(CODE, DESCRIPTION)
+VALUES('RMDR', 'Armadura');
+
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(1, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(2, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(3, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(4, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(5, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(6, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(7, 'ITEM');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(8, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(9, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(10, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(11, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(12, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(13, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(14, 'ARMA');
+INSERT INTO core.PRODUCTS
+(ID, PRODUCT_TYPE)
+VALUES(15, 'ARMA');
+
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(1, 'POCIÓN DE SALUD', 'Se trata de un preparado de hierbas medicinales y sangre de mamíferos que revitaliza y sana heridas superficiales.', '/static/image/items/pocion_salud.avif', 2);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(2, 'POCIÓN DE MANÁ', 'Extracto de corriente mágica que se solidifica y se fusiona a altas temperaturas para obtener un concentrado que permite recuperar el poder mágico de quien lo toma.', '/static/image/items/poción_maná.avif', 2);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(3, 'VENENO', 'Mezcla de veneno de gigaescorpiones y extra-arañas que añade un toque de "dolor insoportable" al filo del arma al que se aplica. Mantener fuera el alcance de los niños.', '/static/image/items/veneno.avif', 3);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(4, 'ENCENDEDOR', 'Se trata de un rudimentario artilugio utilizado en todo el Alto Mundo. Consiste en dos piritas de hierro bañadas en una fina capa de aliento de draco, que al chocarse proyectan chispas incendiarias hacia donde se apunte, permitiendo hacer fuego en cuestión de segundos. Debido a la rápida pérdida de la capa inflamable al usarse este artilugio es de un solo uso.', '/static/image/items/encendedor.avif', 1);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(5, 'GANZUAS', 'Juego de ganzuas que permite abrir cerraduras comunes. Muy utilizado por aquellas personas que han perdido la llave de su cofre personal (o al menos es la excusa que ponen al comprarlas). Se fabrican con hierro ligero de mala calidad, por lo que suelen romperse después de cada uso', '/static/image/items/ganzuas.avif', 2);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(6, 'PLUMA FÉNIX', 'Estas plumas de incalculable poder mágico permiten regresar de la muerte a los caídos en combate, siempre que se usen antes de que el cadáver haya comenzado el estado de putrefacción. Por culpa de su uso el fénix se encuentra en peligro de extinción.', '/static/image/items/pluma_fenix.avif', 3);
+INSERT INTO core.ITEMS
+(ID, NAME, DESCRIPTION, IMAGE_PATH, WEIGHT)
+VALUES(7, 'GOLDS', 'Moneda universal del Alto Mundo. Nadie sabe quien acuñó las primeras o como han conseguido establecerse como la única moneda del continente, pero nadie duda de su valor. Ha sido la causa tanto de los crímenes más horrendos como de los matrimonios más duraderos.', '/static/image/items/golds.avif', 0);
+
+INSERT INTO core.RARITY_LEVELS
+(CODE, DESCRIPTION, COLOR_HEX)
+VALUES('SMPL', 'Simple', '22BFAE');
+INSERT INTO core.RARITY_LEVELS
+(CODE, DESCRIPTION, COLOR_HEX)
+VALUES('PCOM', 'Poco común', '24B0BD');
+INSERT INTO core.RARITY_LEVELS
+(CODE, DESCRIPTION, COLOR_HEX)
+VALUES('RARO', 'Raro', '185A9E');
+INSERT INTO core.RARITY_LEVELS
+(CODE, DESCRIPTION, COLOR_HEX)
+VALUES('LGND', 'Legendario', 'FFD700');
+INSERT INTO core.RARITY_LEVELS
+(CODE, DESCRIPTION, COLOR_HEX)
+VALUES('PLTN', 'Platino', 'B9F2FF');
+
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(8, 'SMPL', 'BOW', 'ARCO DESGASTADO', 'Arco viejo y estropeado. Los filamentos de la cuerda no parecen que vayan a durar mucho más.', '/static/image/weapons/arco_desgastado.avif', 1, 0, 1, 6, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(9, 'SMPL', 'STF', 'BASTÓN VIEJO', 'Bastón viejo y astillado. Parece difícil creer que se pueda llegar a crear magia con él.', '/static/image/weapons/bastón_viejo.avif', 0, 1, 1, 7, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(10, 'SMPL', 'DGR', 'DAGA DESGASTADA', 'Daga desgastada. Es más útil para pelar fruta que para apuñalar a un enemigo.', '/static/image/weapons/daga_desgastada.avif', 1, 0, 1, 3, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(11, 'SMPL', 'SWD', 'ESPADA ROMA', 'Espada sin filo. Puede ser más útil usarla para golpear con el mango.', '/static/image/weapons/espada_roma.avif', 1, 0, 1, 5, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(12, 'SMPL', 'AXE', 'HACHA DESGASTADA', 'Ha pertenecido durante generaciones a una familia de granjeros para sus quehaceres diarios. El último que la utilizó intento usarla para defenderse de un oso. Ahora ya no podrá tener hijos que la hereden. ', '/static/image/weapons/hacha_desgastada.avif', 1, 0, 1, 4, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(13, 'SMPL', '2HS', 'MANDOBLE ROMO', 'Este mandoble pesa el doble de lo que aparenta. Por esto y por la falta de filo resulta mejor usarlo como garrote.', '/static/image/weapons/mandoble_romo.avif', 2, 0, 1, 7, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(14, 'SMPL', 'HGN', 'PISTOLA VIEJA', 'Se desconoce si este arma llego a disparar alguna vez. Fue encontrada entre los restos de un naufragio.', '/static/image/weapons/pistola_vieja.avif', 2, 0, 1, 4, NULL);
+INSERT INTO core.WEAPONS
+(ID, RARITY, WEAPON_TYPE, NAME, DESCRIPTION, IMAGE_PATH, PHYSICAL_ATTACK, MAGIC_ATTACK, UNLOCK_LEVEL, WEIGHT, SPECIAL_CONDITION)
+VALUES(15, 'PCOM', 'HGN', 'LA LEGISLADORA', 'Pistola utilizada en las guerras del norte contra los bárbaros. Ha llevado a incontables malnacidos del norte directos al infernus. Parece tener un cryptohechizo grabado en su cañón.', '/static/image/weapons/la_legisladora.avif', 3, 1, 2, 4, '+2 DAÑO MÁGICO VS BARBAROS');
+
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(1, 3, 15, 100.00, 1);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(2, 3, 7, 80.00, 25);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(3, 2, 7, 80.00, 5);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(4, 2, 1, 75.00, 1);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(5, 2, 6, 25.00, 1);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(6, 1, 7, 80.00, 5);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(7, 1, 2, 75.00, 1);
+INSERT INTO core.ENEMIES_LOOT
+(ID, ENEMY_ID, PRODUCT_ID, DROP_CHANCE, QUANTITY)
+VALUES(8, 1, 5, 30.00, 1);
+
+INSERT INTO core.COMBAT_TEMPLATES_ENEMIES
+(COMBAT_TEMPLATE_ID, ENEMY_ID, QUANTITY)
+VALUES(1, 1, 1);
+INSERT INTO core.COMBAT_TEMPLATES_ENEMIES
+(COMBAT_TEMPLATE_ID, ENEMY_ID, QUANTITY)
+VALUES(1, 2, 1);
+INSERT INTO core.COMBAT_TEMPLATES_ENEMIES
+(COMBAT_TEMPLATE_ID, ENEMY_ID, QUANTITY)
+VALUES(2, 3, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
