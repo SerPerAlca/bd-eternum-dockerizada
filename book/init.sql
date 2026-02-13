@@ -130,7 +130,7 @@ CREATE TABLE CHOICES (
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-INSERT INTO SCENE_TYPES (CODE, DESCRIPTION) VALUES ('END', 'THE END'), ('MAIN', 'PRINCIPAL');
+INSERT INTO SCENE_TYPES (CODE, DESCRIPTION) VALUES ('END', 'THE END'), ('MAIN', 'PRINCIPAL'), ('SPEC', 'ESPECIAL'), ('MULT', 'JUEGO MULTIMEDIA'), ('TABL', 'JUEGO TABLERO');
 INSERT INTO DESTINATION_CHOICE_TYPES (CODE, DESCRIPTION) VALUES ('FGHT', 'FIGHT'), ('END', 'THE END'), ('SCEN', 'SCENE');
 INSERT INTO CHAPTERS (ID, DESCRIPTION) VALUES (1, 'Capítulo I. La Roca Negra'), (999, 'Prólogo'), (9999, 'Fin');
 
@@ -356,7 +356,7 @@ VALUES(49, 50, 'MAIN', 1, 'Corren hasta una gran roca que les ofrece cobertura. 
 
  Sin esperar respuesta, se lanza al descubierto. Flechas y balas muerden el suelo a su alrededor, levantando polvo y chispas. Contra toda lógica, llega al otro lado. 
 
- El enano va después. Corre tras la estela de Darius con menos elegancia y muchos más gruñidos. Tropieza, rueda tras golpear una piedra y completa los últimos metros dando vueltas. Magullado y furioso, pero vivo.', NULL, NULL, 'La Roca Negra', NULL);
+ El enano va después. Corre tras la estela de Darius con menos elegancia y muchos más gruñidos. Tropieza, rueda tras golpear una piedra y completa los últimos metros dando vueltas. Magullado y furioso, pero vivo. /n/n Llega vuestro turno.', NULL, NULL, 'La Roca Negra', NULL);
 INSERT INTO book.SCENES
 (ID, NEXT_SCENE_ID, SCENE_TYPE, CHAPTER_ID, SCENE_TEXT, AUDIO_PATH, MUSIC_PATH, SCENE_LOCATION, RESOURCE_ID)
 VALUES(50, 51, 'GAME', 1, 'Llega vuestro turno.', NULL, NULL, 'La Roca Negra', 'GAME_RUN_DODGE');
